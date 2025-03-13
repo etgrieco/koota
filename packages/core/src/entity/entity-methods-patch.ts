@@ -8,7 +8,7 @@ import { Trait } from '../trait/types';
 import { setChanged } from '../query/modifiers/changed';
 import { getRelationTargets } from '../relation/relation';
 import { Relation } from '../relation/types';
-import { universe } from '../universe/universe';
+import { Universe, universe } from '../universe/universe';
 import { $internal } from '../common';
 import { destroyEntity } from './entity';
 import { Entity } from './types';
@@ -16,11 +16,16 @@ import { ENTITY_ID_MASK, WORLD_ID_SHIFT } from './utils/pack-entity';
 import { isEntityAlive } from './utils/entity-index';
 import { createAdd, createGet, createRemove } from './entity-methods-pure';
 
-// @ts-expect-error
-Number.prototype.add = createAdd(universe);
+const universeRef = { current: universe };
+export const updateEntityUniverse = (targetU: Universe) => {
+	universeRef.current = targetU;
+};
 
 // @ts-expect-error
-Number.prototype.remove = createRemove(universe);
+Number.prototype.add = createAdd(universeRef);
+
+// @ts-expect-error
+Number.prototype.remove = createRemove(universeRef);
 
 // TODO: etc...
 
@@ -46,7 +51,7 @@ Number.prototype.changed = function (this: Entity, trait: Trait) {
 };
 
 // @ts-expect-error
-Number.prototype.get = createGet(universe);
+Number.prototype.get = createGet(universeRef);
 
 // @ts-expect-error
 Number.prototype.set = function (this: Entity, trait: Trait, value: any, triggerChanged = true) {

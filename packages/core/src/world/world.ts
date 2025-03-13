@@ -206,7 +206,7 @@ export class World {
 				ctx.queriesHashMap.set(hash, query);
 			}
 
-			return createQueryResult(query, this, params);
+			return createQueryResult(query, this, params, this[$protected].universe);
 		}
 	}
 

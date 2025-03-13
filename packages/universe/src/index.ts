@@ -7,9 +7,9 @@ export { createWorldFromUniverse } from '../../core/src/world/world';
 export type { Universe } from '../../core/src/universe/universe';
 
 export function createEntityOperations(universe: Universe) {
-	const add = createAdd(universe);
-	const remove = createRemove(universe);
-	const getFn = createGet(universe);
+	const add = createAdd({ current: universe });
+	const remove = createRemove({ current: universe });
+	const getFn = createGet({ current: universe });
 	return {
 		add: (e: Entity, ...traits: Trait[]) => add.call(e, ...traits),
 		remove: (e: Entity, ...traits: Trait[]) => remove.call(e, ...traits),

@@ -1,8 +1,10 @@
 import { $internal } from '../common';
+import { updateEntityUniverse } from '../entity/entity-methods-patch';
 import { Entity } from '../entity/types';
 import { getEntityId } from '../entity/utils/pack-entity';
 import { getStore } from '../trait/trait';
 import { Store, Trait } from '../trait/types';
+import { Universe, universe } from '../universe/universe';
 import { shallowEqual } from '../utils/shallow-equal';
 import { World } from '../world/world';
 import { ModifierData } from './modifier';
@@ -16,10 +18,32 @@ import {
 	StoresFromParameters,
 } from './types';
 
+function createInterceptedObject(results: QueryResult<any>, sideEffect: (...args: any[]) => void) {
+	const methodCache = new WeakMap(); // Store wrapped methods
+	return new Proxy(results, {
+		get(obj, prop, receiver) {
+			const value = Reflect.get(obj, prop, receiver);
+			// If it's a function (method), wrap it with caching
+			if (typeof value === 'function') {
+				if (!methodCache.has(value)) {
+					const wrappedMethod = function (this: any, ...args: any[]) {
+						sideEffect(prop, args); // Perform the side-effect
+						return value.apply(this, args); // Call the original method
+					};
+					methodCache.set(value, wrappedMethod);
+				}
+				return methodCache.get(value);
+			}
+			return value;
+		},
+	});
+}
+
 export function createQueryResult<T extends QueryParameter[]>(
 	query: Query,
 	world: World,
-	params: T
+	params: T,
+	customUniverse: Universe = universe
 ): QueryResult<T> {
 	query.commitRemovals(world);
 	const entities = query.entities.dense.slice() as Entity[];
@@ -209,7 +233,9 @@ export function createQueryResult<T extends QueryParameter[]>(
 		},
 	});
 
-	return results;
+	return createInterceptedObject(results, () => {
+		updateEntityUniverse(customUniverse);
+	}) as QueryResult<T>;
 }
 
 function getQueryStores<T extends QueryParameter[]>(
